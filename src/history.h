@@ -14,6 +14,7 @@
 #define __HISTORY_H__
 
 #include <vector>
+#include <iostream>
 #include <string>
 using namespace std;
 

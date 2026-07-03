@@ -1,3 +1,4 @@
+#include <cstring>
 // $Id: ci_string.h,v 1.2 2001/05/16 14:39:31 mishoo Exp $
 
 // This is a very nice class, probably because it's not coded by me ;=]~

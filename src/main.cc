@@ -52,17 +52,17 @@ static guint g_search_off_timeout_id = 0;
 static void remove_search_off_timeout()
 {
   if (g_search_off_timeout_id) {
-    gtk_timeout_remove(g_search_off_timeout_id);
+    g_source_remove(g_search_off_timeout_id);
     g_search_off_timeout_id = 0;
   }
 }
 
-static void add_search_off_timeout(guint32 timeout, struct gigi *g, GtkFunction func = 0)
+static void add_search_off_timeout(guint32 timeout, struct gigi *g, gboolean func = 0)
 {
   remove_search_off_timeout();
   if (!func)
-    func = GtkFunction(search_off_timeout);
-  g_search_off_timeout_id = gtk_timeout_add(timeout, func, g);
+    func = gboolean(search_off_timeout);
+  g_search_off_timeout_id = g_timeout_add(timeout, func, g);
 }
 
 /// END: TIMEOUT MANAGEMENT
@@ -74,7 +74,7 @@ GtkStyle* style_normal(GtkWidget *w)
   if (!style) {
     style = gtk_style_copy(gtk_widget_get_style(w));
     style->fg[GTK_STATE_NORMAL] = (GdkColor){0, 0x0000, 0x0000, 0x0000};
-    gtk_style_ref(style);
+    g_object_ref(style);
   }
   return style;
 }
@@ -86,7 +86,7 @@ GtkStyle* style_notfound(GtkWidget *w)
   if (!style) {
     style = gtk_style_copy(gtk_widget_get_style(w));
     style->fg[GTK_STATE_NORMAL] = (GdkColor){0, 0xFFFF, 0x0000, 0x0000};
-    gtk_style_ref(style);
+    g_object_ref(style);
   }
   return style;
 }
@@ -98,7 +98,7 @@ GtkStyle* style_notunique(GtkWidget *w)
   if (!style) {
     style = gtk_style_copy(gtk_widget_get_style(w));
     style->fg[GTK_STATE_NORMAL] = (GdkColor){0, 0x0000, 0x0000, 0xFFFF};
-    gtk_style_ref(style);
+    g_object_ref(style);
   }
   return style;
 }
@@ -110,7 +110,7 @@ GtkStyle* style_unique(GtkWidget *w)
   if (!style) {
     style = gtk_style_copy(gtk_widget_get_style(w));
     style->fg[GTK_STATE_NORMAL] = (GdkColor){0, 0x0000, 0xFFFF, 0x0000};
-    gtk_style_ref(style);
+    g_object_ref(style);
   }
   return style;
 }
@@ -270,7 +270,7 @@ on_ext_handler(GtkCompletionLine *cl, const char* ext, struct gigi* g)
       str += cmd.substr(0, pos);
     gtk_label_set_text(GTK_LABEL(g->w2), str.c_str());
     gtk_widget_show(g->w2);
-    // gtk_timeout_add(1000, GtkFunction(search_off_timeout), g);
+    // g_timeout_add(1000, gboolean(search_off_timeout), g);
   } else {
     search_off_timeout(g);
   }
@@ -381,7 +381,7 @@ on_search_not_found(GtkCompletionLine *cl, struct gigi *g)
 {
   gtk_label_set_text(GTK_LABEL(g->w1), "Not Found!");
   gtk_widget_set_style(g->w2, style_notfound(g->w2));
-  add_search_off_timeout(1000, g, GtkFunction(search_fail_timeout));
+  add_search_off_timeout(1000, g, gboolean(search_fail_timeout));
 }
 
 static bool
@@ -537,14 +537,14 @@ int main(int argc, char **argv)
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_widget_realize(win);
-  gdk_window_set_decorations(win->window, GDK_DECOR_BORDER);
+  gdk_window_set_decorations(gtk_widget_get_window(GTK_WIDGET(win)), GDK_DECOR_BORDER);
   gtk_widget_set_name(win, "Msh_Run_Window");
   gtk_window_set_title(GTK_WINDOW(win), "Execute program feat. completion");
-  gtk_window_set_policy(GTK_WINDOW(win), FALSE, FALSE, TRUE);
+  // gtk_window_set_policy(GTK_WINDOW(win), FALSE, FALSE, TRUE);
   // gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_CENTER);
   gtk_container_set_border_width(GTK_CONTAINER(win), 4);
-  gtk_signal_connect(GTK_OBJECT(win), "destroy",
-                     GTK_SIGNAL_FUNC(gtk_main_quit), NULL);
+  g_signal_connect(G_OBJECT(win), "destroy",
+                     G_CALLBACK(gtk_main_quit), NULL);
 
   GtkWidget *hbox = gtk_vbox_new(FALSE, 2);
   gtk_widget_show(hbox);
@@ -585,30 +585,30 @@ int main(int argc, char **argv)
   g.w1 = label;
   g.w2 = label_search;
 
-  gtk_widget_set_usize(compline, prefs_width, -2);
-  gtk_signal_connect(GTK_OBJECT(compline), "cancel",
-                     GTK_SIGNAL_FUNC(gtk_main_quit), NULL);
-  gtk_signal_connect(GTK_OBJECT(compline), "activate",
-                     GTK_SIGNAL_FUNC(on_compline_activated), &g);
-  gtk_signal_connect(GTK_OBJECT(compline), "runwithterm",
-                     GTK_SIGNAL_FUNC(on_compline_runwithterm), &g);
+  gtk_widget_set_size_request(compline, prefs_width, -2);
+  g_signal_connect(G_OBJECT(compline), "cancel",
+                     G_CALLBACK(gtk_main_quit), NULL);
+  g_signal_connect(G_OBJECT(compline), "activate",
+                     G_CALLBACK(on_compline_activated), &g);
+  g_signal_connect(G_OBJECT(compline), "runwithterm",
+                     G_CALLBACK(on_compline_runwithterm), &g);
 
-  gtk_signal_connect(GTK_OBJECT(compline), "unique",
-                     GTK_SIGNAL_FUNC(on_compline_unique), &g);
-  gtk_signal_connect(GTK_OBJECT(compline), "notunique",
-                     GTK_SIGNAL_FUNC(on_compline_notunique), &g);
-  gtk_signal_connect(GTK_OBJECT(compline), "incomplete",
-                     GTK_SIGNAL_FUNC(on_compline_incomplete), &g);
+  g_signal_connect(G_OBJECT(compline), "unique",
+                     G_CALLBACK(on_compline_unique), &g);
+  g_signal_connect(G_OBJECT(compline), "notunique",
+                     G_CALLBACK(on_compline_notunique), &g);
+  g_signal_connect(G_OBJECT(compline), "incomplete",
+                     G_CALLBACK(on_compline_incomplete), &g);
 
-  gtk_signal_connect(GTK_OBJECT(compline), "search_mode",
-                     GTK_SIGNAL_FUNC(on_search_mode), &g);
-  gtk_signal_connect(GTK_OBJECT(compline), "search_not_found",
-                     GTK_SIGNAL_FUNC(on_search_not_found), &g);
-  gtk_signal_connect(GTK_OBJECT(compline), "search_letter",
-                     GTK_SIGNAL_FUNC(on_search_letter), label_search);
+  g_signal_connect(G_OBJECT(compline), "search_mode",
+                     G_CALLBACK(on_search_mode), &g);
+  g_signal_connect(G_OBJECT(compline), "search_not_found",
+                     G_CALLBACK(on_search_not_found), &g);
+  g_signal_connect(G_OBJECT(compline), "search_letter",
+                     G_CALLBACK(on_search_letter), label_search);
 
-  gtk_signal_connect(GTK_OBJECT(compline), "ext_handler",
-                     GTK_SIGNAL_FUNC(on_ext_handler), &g);
+  g_signal_connect(G_OBJECT(compline), "ext_handler",
+                     G_CALLBACK(on_ext_handler), &g);
   gtk_widget_show(compline);
 
   int shows_last_history_item;
@@ -653,7 +653,7 @@ int main(int argc, char **argv)
   }
   else
   {
-    gtk_widget_set_uposition(win, prefs_left, prefs_top);
+    gtk_window_move(GTK_WINDOW(win), prefs_left, prefs_top);
   }
 
   gtk_widget_show(win);
